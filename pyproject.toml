@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "strategy-catalog"
+version = "0.1.0"
+description = "Single source of truth for Blackline strategy metadata, shared by tt-bot and trading-platform."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Proprietary"}
+authors = [{name = "Blackline Trade Strategies"}]
+# Intentionally NO dependencies — pure-Python data + helpers. Keeps the
+# package safe to install in either tt-bot (which doesn't want platform
+# deps) or trading-platform (which doesn't want bot deps).
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
