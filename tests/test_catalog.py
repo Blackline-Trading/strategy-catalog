@@ -151,16 +151,19 @@ def test_grantable_expands_variants():
     entry per variant; everything else passes through 1:1. 7 non-variant + 4
     variant = 11."""
     from strategy_catalog import GRANTABLE, GRANTABLE_KEYS
-    assert len(GRANTABLE) == 11
+    # 6 non-variant + VPS(2) + 0DTE(2) + FSCALP(3) = 13
+    assert len(GRANTABLE) == 13
     keys = set(GRANTABLE_KEYS)
     # variant keys == the bot config strategy NAMES (the grant↔bot contract)
     assert {"Vertical Put Spread - Day", "Vertical Put Spread - Swing"} <= keys
     assert {"0 DTE SPX", "0 DTE - End of Day"} <= keys
-    # the combined engine keys are NOT grantable units (replaced by variants)
+    assert {"Nasdaq Day Trade", "S&P Day Trade", "Nasdaq Micro Day Trade"} <= keys
+    # combined engine keys are NOT grantable units (replaced by variants)
     assert "Vertical Spread" not in keys
     assert "Zero DTE" not in keys
+    assert "Futures Scalp" not in keys
     # non-variant strategies pass through unchanged
-    assert "Iron Condor" in keys and "Futures Scalp" in keys
+    assert "Iron Condor" in keys
 
 
 def test_grantable_keys_and_slugs_unique():
@@ -177,6 +180,8 @@ def test_engine_type_for_maps_variant_to_engine():
     assert engine_type_for("Vertical Put Spread - Swing") == "Vertical Spread"
     assert engine_type_for("0 DTE SPX") == "Zero DTE"
     assert engine_type_for("0 DTE - End of Day") == "Zero DTE"
+    assert engine_type_for("Nasdaq Micro Day Trade") == "Futures Scalp"
+    assert engine_type_for("Nasdaq Day Trade") == "Futures Scalp"
     # non-variant: engine_type == key
     assert engine_type_for("Iron Condor") == "Iron Condor"
     assert engine_type_for("Bogus") is None
@@ -196,6 +201,8 @@ def test_grantable_keys_for_product():
         "Vertical Put Spread - Day", "Vertical Put Spread - Swing"]
     assert grantable_keys_for_product("Zero DTE") == [
         "0 DTE SPX", "0 DTE - End of Day"]
+    assert grantable_keys_for_product("Futures Scalp") == [
+        "Nasdaq Day Trade", "S&P Day Trade", "Nasdaq Micro Day Trade"]
     assert grantable_keys_for_product("Iron Condor") == ["Iron Condor"]
 
 

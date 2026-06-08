@@ -18,7 +18,7 @@ Adding a new strategy:
 """
 from __future__ import annotations
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 # Each catalog entry is a dict with these required keys:
@@ -118,13 +118,20 @@ CATALOG: list[dict] = [
         "key": "Futures Scalp",
         "name": "Futures Scalp",
         "slug": "futures_scalp",
-        # Aliases cover the variant names that share this engine
-        # (Nasdaq Day Trade trades /NQM6, S&P Day Trade trades /ESM6,
-        # both use FuturesScalpConfig).
-        "aliases": ["Nasdaq Day Trade", "S&P Day Trade"],
+        # Aliases keep every variant name a valid bot type (back-compat for the
+        # #48 validator); the grantable split is in `variants` below.
+        "aliases": ["Nasdaq Day Trade", "S&P Day Trade", "Nasdaq Micro Day Trade"],
         "description": "Rolling-extreme scalp on futures contracts (/NQ /MNQ /ES /MES). L1/L2 long on pullback from session high; L3 short on breakout from session low. GTC limit at profit target; bot-monitored stop loss.",
         "risk": "Direct futures exposure. Stop losses are bot-monitored; missed cycle could leave the position open past the stop.",
         "defaults": {"profit_target_pct": 50, "stop_loss_mult": 1, "max_positions": 3, "max_contracts": 1, "max_bp_pct": 5, "avoid_earnings": False, "avoid_fomc": False},
+        # BL-84: scalp runs as distinct VARIANTS sharing the Futures Scalp engine,
+        # differing by the futures contract. `key` == the bot config strategy NAME;
+        # the per-variant underlying lives platform-side (engine-agnostic catalog).
+        "variants": [
+            {"key": "Nasdaq Day Trade",       "name": "FSCALP — Nasdaq (/NQ)",      "slug": "fscalp_nasdaq"},
+            {"key": "S&P Day Trade",          "name": "FSCALP — S&P (/ES)",         "slug": "fscalp_sp"},
+            {"key": "Nasdaq Micro Day Trade", "name": "FSCALP — Nasdaq Micro (/MNQ)","slug": "fscalp_micro"},
+        ],
     },
     {
         "key": "Nasdaq Short Put",
