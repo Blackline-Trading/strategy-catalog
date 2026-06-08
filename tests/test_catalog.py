@@ -146,6 +146,79 @@ def test_valid_types_covers_keys_and_aliases():
             assert alias in VALID_TYPES
 
 
+def test_grantable_expands_variants():
+    """GRANTABLE is the per-VARIANT view: split strategies (VPS, 0DTE) emit one
+    entry per variant; everything else passes through 1:1. 7 non-variant + 4
+    variant = 11."""
+    from strategy_catalog import GRANTABLE, GRANTABLE_KEYS
+    assert len(GRANTABLE) == 11
+    keys = set(GRANTABLE_KEYS)
+    # variant keys == the bot config strategy NAMES (the grant↔bot contract)
+    assert {"Vertical Put Spread - Day", "Vertical Put Spread - Swing"} <= keys
+    assert {"0 DTE SPX", "0 DTE - End of Day"} <= keys
+    # the combined engine keys are NOT grantable units (replaced by variants)
+    assert "Vertical Spread" not in keys
+    assert "Zero DTE" not in keys
+    # non-variant strategies pass through unchanged
+    assert "Iron Condor" in keys and "Futures Scalp" in keys
+
+
+def test_grantable_keys_and_slugs_unique():
+    from strategy_catalog import GRANTABLE
+    keys = [g["key"] for g in GRANTABLE]
+    slugs = [g["slug"] for g in GRANTABLE]
+    assert len(keys) == len(set(keys))
+    assert len(slugs) == len(set(slugs))
+
+
+def test_engine_type_for_maps_variant_to_engine():
+    from strategy_catalog import engine_type_for
+    assert engine_type_for("Vertical Put Spread - Day") == "Vertical Spread"
+    assert engine_type_for("Vertical Put Spread - Swing") == "Vertical Spread"
+    assert engine_type_for("0 DTE SPX") == "Zero DTE"
+    assert engine_type_for("0 DTE - End of Day") == "Zero DTE"
+    # non-variant: engine_type == key
+    assert engine_type_for("Iron Condor") == "Iron Condor"
+    assert engine_type_for("Bogus") is None
+
+
+def test_engine_types_are_all_valid_bot_types():
+    """Every grantable's engine_type must remain a valid bot config type — this
+    is what keeps the bot's config validation green after the split."""
+    from strategy_catalog import GRANTABLE, VALID_TYPES
+    for g in GRANTABLE:
+        assert g["engine_type"] in VALID_TYPES, g["key"]
+
+
+def test_grantable_keys_for_product():
+    from strategy_catalog import grantable_keys_for_product
+    assert grantable_keys_for_product("Vertical Spread") == [
+        "Vertical Put Spread - Day", "Vertical Put Spread - Swing"]
+    assert grantable_keys_for_product("Zero DTE") == [
+        "0 DTE SPX", "0 DTE - End of Day"]
+    assert grantable_keys_for_product("Iron Condor") == ["Iron Condor"]
+
+
+def test_variant_display_labels_and_product_grouping():
+    from strategy_catalog import GRANTABLE_BY_KEY
+    day = GRANTABLE_BY_KEY["Vertical Put Spread - Day"]
+    assert day["name"] == "VPS — Day"
+    assert day["product_name"] == "Vertical Put Spread"   # marketing groups here
+    assert day["is_variant"] is True
+    ic = GRANTABLE_BY_KEY["Iron Condor"]
+    assert ic["is_variant"] is False and ic["product_name"] == "Iron Condor"
+
+
+def test_catalog_engine_view_unchanged_by_split():
+    """The split must NOT change the engine/product CATALOG keys — the bot's
+    type-validation + the public marketing cards depend on them."""
+    assert set(STRATEGY_KEYS) == {
+        "Iron Condor", "Vertical Spread", "Covered Call Wheel", "Zero DTE",
+        "Liquidity Raid", "Momentum Breakout", "Supply Demand", "Futures Scalp",
+        "Nasdaq Short Put",
+    }
+
+
 def test_overlay_fields_are_stable():
     """Pin the overlay-field set — changing it requires coordinated
     schema migrations across bot + platform."""

@@ -18,7 +18,7 @@ Adding a new strategy:
 """
 from __future__ import annotations
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 # Each catalog entry is a dict with these required keys:
@@ -55,6 +55,12 @@ CATALOG: list[dict] = [
         "description": "Sell an OTM put and buy a further OTM put on the same expiration. Bullish-to-neutral credit strategy.",
         "risk": "Defined risk. Max loss = wing width − credit received.",
         "defaults": {"profit_target_pct": 50, "stop_loss_mult": 2, "max_positions": 3, "max_contracts": 5, "max_bp_pct": 5, "avoid_earnings": False, "avoid_fomc": False},
+        # BL-84: granted/configured/enabled as two independent VARIANTS that share
+        # the "Vertical Spread" engine type. `key` == the bot config strategy NAME.
+        "variants": [
+            {"key": "Vertical Put Spread - Day",   "name": "VPS — Day",   "slug": "vps_day"},
+            {"key": "Vertical Put Spread - Swing", "name": "VPS — Swing", "slug": "vps_swing"},
+        ],
     },
     {
         "key": "Covered Call Wheel",
@@ -73,6 +79,13 @@ CATALOG: list[dict] = [
         "description": "Same-day expiration credit spreads on SPX. High theta decay, typically entered in the morning and closed by end of day.",
         "risk": "Defined risk. Fast-moving intraday positions require active monitoring.",
         "defaults": {"profit_target_pct": 50, "stop_loss_mult": 2, "max_positions": 1, "max_contracts": 1, "max_bp_pct": 10, "avoid_earnings": False, "avoid_fomc": False},
+        # BL-84: two independent VARIANTS sharing the "Zero DTE" engine type —
+        # the morning (AM) entry and the end-of-day (EOD) entry. `key` == the bot
+        # config strategy NAME.
+        "variants": [
+            {"key": "0 DTE SPX",          "name": "0DTE — AM",  "slug": "zero_dte_am"},
+            {"key": "0 DTE - End of Day", "name": "0DTE — EOD", "slug": "zero_dte_eod"},
+        ],
     },
     {
         "key": "Liquidity Raid",
@@ -176,6 +189,60 @@ STRATEGY_SLUGS: list[str] = [s["slug"] for s in CATALOG]
 VALID_TYPES: set[str] = set(CANONICAL_NAMES_BY_TYPE.keys())
 
 
+# ── Grantable / VARIANT view (BL-84, 2026-06-08) ─────────────────────────────
+# Some strategies run as multiple VARIANTS that share one engine TYPE but are
+# GRANTED, CONFIGURED (schema), and ENABLED independently — VPS Day vs Swing;
+# 0DTE AM vs EOD. The bot carries the variant in strategy["name"] while
+# strategy["type"] stays the engine type, so CATALOG above (engine/product-keyed)
+# is UNCHANGED — the bot's type-validation AND the public marketing product cards
+# keep working exactly as before. GRANTABLE is the variant-level unit the PLATFORM
+# uses for grants / schema / enablement / UI:
+#   key          — grant + enablement identity (== the bot config strategy NAME
+#                  for variants; == the engine key for non-variant strategies)
+#   engine_type  — the bot config strategy TYPE (the CC schema is keyed by THIS)
+#   product_*    — the parent product (marketing grouping)
+def _grantable_entry(parent: dict, *, key: str, name: str, slug: str, is_variant: bool) -> dict:
+    return {
+        "key": key, "name": name, "slug": slug,
+        "engine_type":  parent["key"],
+        "product_key":  parent["key"],
+        "product_name": parent["name"],
+        "product_slug": parent["slug"],
+        "description":  parent["description"],
+        "risk":         parent["risk"],
+        "defaults":     parent["defaults"],
+        "is_variant":   is_variant,
+    }
+
+
+GRANTABLE: list[dict] = []
+for _s in CATALOG:
+    _vs = _s.get("variants")
+    if _vs:
+        for _v in _vs:
+            GRANTABLE.append(_grantable_entry(_s, key=_v["key"], name=_v["name"],
+                                              slug=_v["slug"], is_variant=True))
+    else:
+        GRANTABLE.append(_grantable_entry(_s, key=_s["key"], name=_s["name"],
+                                          slug=_s["slug"], is_variant=False))
+
+GRANTABLE_BY_KEY:  dict[str, dict] = {g["key"]: g for g in GRANTABLE}
+GRANTABLE_BY_SLUG: dict[str, dict] = {g["slug"]: g for g in GRANTABLE}
+GRANTABLE_KEYS:    list[str]       = [g["key"] for g in GRANTABLE]
+
+
+def engine_type_for(grant_key: str) -> "str | None":
+    """The bot config `type` (and CC schema key) for a grantable key/variant.
+    None if the key is unknown."""
+    g = GRANTABLE_BY_KEY.get(grant_key)
+    return g["engine_type"] if g else None
+
+
+def grantable_keys_for_product(product_key: str) -> list[str]:
+    """All grantable keys (the variants) under a product/engine key."""
+    return [g["key"] for g in GRANTABLE if g["product_key"] == product_key]
+
+
 # ── Helper functions ─────────────────────────────────────────────────────────
 
 def get_by_key(key: str) -> dict | None:
@@ -211,6 +278,12 @@ __all__ = [
     "STRATEGY_KEYS",
     "STRATEGY_SLUGS",
     "VALID_TYPES",
+    "GRANTABLE",
+    "GRANTABLE_BY_KEY",
+    "GRANTABLE_BY_SLUG",
+    "GRANTABLE_KEYS",
+    "engine_type_for",
+    "grantable_keys_for_product",
     "get_by_key",
     "get_by_slug",
     "get_canonical_names",
