@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "strategy-catalog"
-version = "0.3.0"
+version = "0.4.0"
 description = "Single source of truth for Blackline strategy metadata, shared by tt-bot and trading-platform."
 readme = "README.md"
 requires-python = ">=3.10"
