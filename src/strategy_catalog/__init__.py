@@ -18,7 +18,7 @@ Adding a new strategy:
 """
 from __future__ import annotations
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 
 # Each catalog entry is a dict with these required keys:
@@ -141,6 +141,15 @@ CATALOG: list[dict] = [
         "description": "Sell a naked short put for credit on /NQ /MNQ /ES /MES futures when the underlying drops X% from the prior session close. Delta-targeted strike, 45 DTE monthly cycle.",
         "risk": "Naked short put — assignment exposure at strike. Stop loss at 2× credit caps the loss leg.",
         "defaults": {"profit_target_pct": 50, "stop_loss_mult": 2, "max_positions": 4, "max_contracts": 1, "max_bp_pct": 10, "avoid_earnings": False, "avoid_fomc": False},
+    },
+    {
+        "key": "Short Put",
+        "name": "Short Put",
+        "slug": "short-put",
+        "aliases": [],
+        "description": "Single naked short put for credit (VPS-Swing entry logic, no long wing). Managed by profit-target GTC, roll, then wheel handoff on assignment.",
+        "risk": "Undefined risk (naked). Assignment exposure at strike; max loss = (strike − credit) × 100 if the underlying goes to zero. BP is margin-based, not spread width.",
+        "defaults": {"profit_target_pct": 50, "max_positions": 3, "max_contracts": 5, "max_bp_pct": 5, "avoid_earnings": False, "avoid_fomc": False},
     },
 ]
 
