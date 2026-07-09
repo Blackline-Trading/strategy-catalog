@@ -18,7 +18,7 @@ Adding a new strategy:
 """
 from __future__ import annotations
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 
 # Each catalog entry is a dict with these required keys:
@@ -150,6 +150,15 @@ CATALOG: list[dict] = [
         "description": "Single naked short put for credit (VPS-Swing entry logic, no long wing). Managed by profit-target GTC, roll, then wheel handoff on assignment.",
         "risk": "Undefined risk (naked). Assignment exposure at strike; max loss = (strike − credit) × 100 if the underlying goes to zero. BP is margin-based, not spread width.",
         "defaults": {"profit_target_pct": 50, "max_positions": 3, "max_contracts": 5, "max_bp_pct": 5, "avoid_earnings": False, "avoid_fomc": False},
+    },
+    {
+        "key": "MTF Trend",
+        "name": "MTF Trend (Underlying)",
+        "slug": "mtf_trend",
+        "aliases": ["MTF Trend (Underlying)"],
+        "description": "Multi-timeframe trend-follower traded as SHARES (long + short). Daily 200-EMA macro bias + LTF channel pullback-reclaim entry, swing stop, two-step exit (partial at R then trail). Shorts are half-sized. Vetted 2008-26; capital-light (concurrent-position cap).",
+        "risk": "Direct equity exposure, long and short. Trailing stop is bot-monitored (a missed cycle could leave a position past its stop). Shorting needs a margin account + borrow. Modest, lumpy edge — real chop-year drawdowns.",
+        "defaults": {"max_positions": 5, "max_bp_pct": 10, "avoid_earnings": True, "avoid_fomc": True},
     },
 ]
 
