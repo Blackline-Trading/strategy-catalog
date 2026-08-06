@@ -18,7 +18,7 @@ Adding a new strategy:
 """
 from __future__ import annotations
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 
 # Each catalog entry is a dict with these required keys:
@@ -145,7 +145,12 @@ CATALOG: list[dict] = [
     {
         "key": "Short Put",
         "name": "Short Put",
-        "slug": "short-put",
+        # 2026-08-06 audit: was "short-put" (hyphen), the only entry that broke
+        # the documented snake_case slug contract — test_slugs_are_snake_case
+        # had been failing at HEAD since v0.4.0. Safe to change: get_by_slug /
+        # CATALOG_BY_SLUG have no live consumer (bot_trades.strategy holds
+        # canonical NAMES post-#23N, not slugs), so no stored data references it.
+        "slug": "short_put",
         "aliases": [],
         "description": "Single naked short put for credit (VPS-Swing entry logic, no long wing). Managed by profit-target GTC, roll, then wheel handoff on assignment.",
         "risk": "Undefined risk (naked). Assignment exposure at strike; max loss = (strike − credit) × 100 if the underlying goes to zero. BP is margin-based, not spread width.",

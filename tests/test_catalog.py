@@ -6,8 +6,6 @@ both sides of the contract.
 """
 from __future__ import annotations
 
-import pytest
-
 from strategy_catalog import (
     CATALOG,
     CATALOG_BY_KEY,
@@ -58,6 +56,40 @@ def test_slugs_are_snake_case():
         assert pat.match(s["slug"]), f"slug {s['slug']!r} is not snake_case"
 
 
+# ── Slug / canonical-name lookups (added 2026-08-06 audit) ───────────────────
+# CATALOG_BY_SLUG, STRATEGY_SLUGS and ALL_CANONICAL_NAMES were exported and
+# imported by this file but never asserted on. That blind spot is exactly how
+# the `short-put` hyphen slug survived two releases: the snake_case test caught
+# it, but nothing pinned the derived lookups, so the failure read as one stale
+# assertion rather than a broken public surface.
+
+def test_slug_lookups_agree_with_catalog():
+    """STRATEGY_SLUGS, CATALOG_BY_SLUG and get_by_slug are three views of the
+    same mapping — they must never disagree, and slugs must be unique."""
+    slugs = [s["slug"] for s in CATALOG]
+    assert len(slugs) == len(set(slugs)), "duplicate slug in CATALOG"
+    assert set(STRATEGY_SLUGS) == set(slugs)
+    assert set(CATALOG_BY_SLUG) == set(slugs)
+    for entry in CATALOG:
+        assert CATALOG_BY_SLUG[entry["slug"]] is entry
+        assert get_by_slug(entry["slug"]) is entry
+    assert get_by_slug("definitely-not-a-slug") is None
+
+
+def test_all_canonical_names_is_the_union():
+    """ALL_CANONICAL_NAMES is what the config validators check membership
+    against — it must be exactly the union of the per-key sets, so a strategy
+    added to CATALOG can never be missing from the validator's vocabulary."""
+    union: set[str] = set()
+    for names in CANONICAL_NAMES_BY_KEY.values():
+        union |= names
+    assert ALL_CANONICAL_NAMES == union
+    for entry in CATALOG:
+        assert entry["key"] in ALL_CANONICAL_NAMES
+        for alias in entry["aliases"]:
+            assert alias in ALL_CANONICAL_NAMES
+
+
 def test_defaults_have_overlay_field_subset():
     """Every entry's defaults dict can ONLY contain keys from the overlay
     set. Strategy-specific knobs (drop_pct_threshold, l1_trigger_drop,
@@ -96,6 +128,8 @@ def test_known_strategies_present():
         "Supply Demand",
         "Futures Scalp",
         "Nasdaq Short Put",
+        "Short Put",          # v0.4.0
+        "MTF Trend",          # v0.5.0
     }
     assert set(STRATEGY_KEYS) == expected
 
@@ -147,12 +181,12 @@ def test_valid_types_covers_keys_and_aliases():
 
 
 def test_grantable_expands_variants():
-    """GRANTABLE is the per-VARIANT view: split strategies (VPS, 0DTE) emit one
-    entry per variant; everything else passes through 1:1. 7 non-variant + 4
-    variant = 11."""
+    """GRANTABLE is the per-VARIANT view: split strategies (VPS, 0DTE, FSCALP)
+    emit one entry per variant; everything else passes through 1:1."""
     from strategy_catalog import GRANTABLE, GRANTABLE_KEYS
-    # 6 non-variant + VPS(2) + 0DTE(2) + FSCALP(3) = 13
-    assert len(GRANTABLE) == 13
+    # 8 non-variant (IC, Wheel, LR, MOM, SD, NSP, Short Put, MTF Trend)
+    # + VPS(2) + 0DTE(2) + FSCALP(3) = 15
+    assert len(GRANTABLE) == 15
     keys = set(GRANTABLE_KEYS)
     # variant keys == the bot config strategy NAMES (the grant↔bot contract)
     assert {"Vertical Put Spread - Day", "Vertical Put Spread - Swing"} <= keys
@@ -222,7 +256,7 @@ def test_catalog_engine_view_unchanged_by_split():
     assert set(STRATEGY_KEYS) == {
         "Iron Condor", "Vertical Spread", "Covered Call Wheel", "Zero DTE",
         "Liquidity Raid", "Momentum Breakout", "Supply Demand", "Futures Scalp",
-        "Nasdaq Short Put",
+        "Nasdaq Short Put", "Short Put", "MTF Trend",
     }
 
 
