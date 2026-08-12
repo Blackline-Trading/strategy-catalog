@@ -18,7 +18,7 @@ Adding a new strategy:
 """
 from __future__ import annotations
 
-__version__ = "0.5.1"
+__version__ = "0.6.0"
 
 
 # Each catalog entry is a dict with these required keys:
@@ -163,6 +163,15 @@ CATALOG: list[dict] = [
         "aliases": ["MTF Trend (Underlying)"],
         "description": "Multi-timeframe trend-follower traded as SHARES (long + short). Daily 200-EMA macro bias + LTF channel pullback-reclaim entry, swing stop, two-step exit (partial at R then trail). Shorts are half-sized. Vetted 2008-26; capital-light (concurrent-position cap).",
         "risk": "Direct equity exposure, long and short. Trailing stop is bot-monitored (a missed cycle could leave a position past its stop). Shorting needs a margin account + borrow. Modest, lumpy edge — real chop-year drawdowns.",
+        "defaults": {"max_positions": 5, "max_bp_pct": 10, "avoid_earnings": True, "avoid_fomc": True},
+    },
+    {
+        "key": "MTF Trend (Options)",
+        "name": "MTF Trend (Options)",
+        "slug": "mtf_trend_options",
+        "aliases": ["MTF Trend (Debit)"],
+        "description": "The SAME multi-timeframe trend signal as MTF Trend (Underlying), expressed as a long directional debit — a call on a long signal, a put on a short. ATM ~0.50 delta, nearest standard monthly >= 25 DTE. Entry, stop, partial and trail are all computed on the UNDERLYING; the option is only the vehicle.",
+        "risk": "Defined risk: the maximum loss is the debit paid, known and funded at entry. In exchange the position decays (theta) and the underlying-price stop is bot-monitored — only the profit target rests at the broker, so an outage means riding to the debit floor rather than a designed stop-out. Held ~1-3 days against 25-55 DTE, so expiry is rare but force-closed inside 5 DTE because an ITM long auto-exercises into shares.",
         "defaults": {"max_positions": 5, "max_bp_pct": 10, "avoid_earnings": True, "avoid_fomc": True},
     },
 ]

@@ -130,6 +130,7 @@ def test_known_strategies_present():
         "Nasdaq Short Put",
         "Short Put",          # v0.4.0
         "MTF Trend",          # v0.5.0
+        "MTF Trend (Options)",  # v0.6.0 — same signal, long-debit vehicle
     }
     assert set(STRATEGY_KEYS) == expected
 
@@ -184,9 +185,9 @@ def test_grantable_expands_variants():
     """GRANTABLE is the per-VARIANT view: split strategies (VPS, 0DTE, FSCALP)
     emit one entry per variant; everything else passes through 1:1."""
     from strategy_catalog import GRANTABLE, GRANTABLE_KEYS
-    # 8 non-variant (IC, Wheel, LR, MOM, SD, NSP, Short Put, MTF Trend)
-    # + VPS(2) + 0DTE(2) + FSCALP(3) = 15
-    assert len(GRANTABLE) == 15
+    # 9 non-variant (IC, Wheel, LR, MOM, SD, NSP, Short Put, MTF Trend,
+    # MTF Trend (Options)) + VPS(2) + 0DTE(2) + FSCALP(3) = 16
+    assert len(GRANTABLE) == 16
     keys = set(GRANTABLE_KEYS)
     # variant keys == the bot config strategy NAMES (the grant↔bot contract)
     assert {"Vertical Put Spread - Day", "Vertical Put Spread - Swing"} <= keys
@@ -256,7 +257,7 @@ def test_catalog_engine_view_unchanged_by_split():
     assert set(STRATEGY_KEYS) == {
         "Iron Condor", "Vertical Spread", "Covered Call Wheel", "Zero DTE",
         "Liquidity Raid", "Momentum Breakout", "Supply Demand", "Futures Scalp",
-        "Nasdaq Short Put", "Short Put", "MTF Trend",
+        "Nasdaq Short Put", "Short Put", "MTF Trend", "MTF Trend (Options)",
     }
 
 
