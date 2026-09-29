@@ -18,7 +18,7 @@ Adding a new strategy:
 """
 from __future__ import annotations
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 
 # Each catalog entry is a dict with these required keys:
@@ -173,6 +173,19 @@ CATALOG: list[dict] = [
         "description": "The SAME multi-timeframe trend signal as MTF Trend (Underlying), expressed as a long directional debit — a call on a long signal, a put on a short. ATM ~0.50 delta, nearest standard monthly >= 25 DTE. Entry, stop, partial and trail are all computed on the UNDERLYING; the option is only the vehicle.",
         "risk": "Defined risk: the maximum loss is the debit paid, known and funded at entry. In exchange the position decays (theta) and the underlying-price stop is bot-monitored — only the profit target rests at the broker, so an outage means riding to the debit floor rather than a designed stop-out. Held ~1-3 days against 25-55 DTE, so expiry is rare but force-closed inside 5 DTE because an ITM long auto-exercises into shares.",
         "defaults": {"max_positions": 5, "max_bp_pct": 10, "avoid_earnings": True, "avoid_fomc": True},
+    },
+    {
+        # Operator's strategy (2026-09-29). TEST LANE ONLY until it clears the
+        # acceptance bar: `public: False` keeps it off the marketing product cards,
+        # and it is NOT in the platform's validated tier list, so no user tier gets it.
+        "key": "Put Ratio 1:2:2",
+        "name": "Put Ratio 1:2:2",
+        "slug": "put_ratio",
+        "aliases": ["Put Ratio", "1-2-2 Put Ratio"],
+        "description": "About 100 days out, buy 1 put at 30 delta, sell 2 at 18 delta and buy 2 at 3 delta, for a net debit. Profits most if the underlying drifts down to the short strike; the far puts turn a crash back into a gain.",
+        "risk": "Defined risk. The worst case is the underlying finishing at the far long strike: loss = debit + (short strike − far strike) − (upper strike − short strike). A rally above the upper strike loses only the debit.",
+        "defaults": {"profit_target_pct": 50, "max_positions": 1, "avoid_earnings": False, "avoid_fomc": False},
+        "public": False,
     },
 ]
 

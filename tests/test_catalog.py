@@ -131,8 +131,17 @@ def test_known_strategies_present():
         "Short Put",          # v0.4.0
         "MTF Trend",          # v0.5.0
         "MTF Trend (Options)",  # v0.6.0 — same signal, long-debit vehicle
+        "Put Ratio 1:2:2",      # v0.7.0 — operator's strategy, test lane only
     }
     assert set(STRATEGY_KEYS) == expected
+
+
+def test_test_only_strategies_are_not_public():
+    """`public: False` keeps a strategy off the marketing product cards until it
+    clears the acceptance bar. Put Ratio 1:2:2 is on the Test lane only."""
+    from strategy_catalog import CATALOG_BY_KEY
+    assert CATALOG_BY_KEY["Put Ratio 1:2:2"]["public"] is False
+    assert all(s.get("public", True) is True for k, s in CATALOG_BY_KEY.items() if k != "Put Ratio 1:2:2")
 
 
 def test_futures_scalp_aliases_cover_paper_variants():
@@ -187,7 +196,7 @@ def test_grantable_expands_variants():
     from strategy_catalog import GRANTABLE, GRANTABLE_KEYS
     # 9 non-variant (IC, Wheel, LR, MOM, SD, NSP, Short Put, MTF Trend,
     # MTF Trend (Options)) + VPS(2) + 0DTE(2) + FSCALP(3) = 16
-    assert len(GRANTABLE) == 16
+    assert len(GRANTABLE) == 17   # v0.7.0 + Put Ratio 1:2:2
     keys = set(GRANTABLE_KEYS)
     # variant keys == the bot config strategy NAMES (the grant↔bot contract)
     assert {"Vertical Put Spread - Day", "Vertical Put Spread - Swing"} <= keys
@@ -257,7 +266,7 @@ def test_catalog_engine_view_unchanged_by_split():
     assert set(STRATEGY_KEYS) == {
         "Iron Condor", "Vertical Spread", "Covered Call Wheel", "Zero DTE",
         "Liquidity Raid", "Momentum Breakout", "Supply Demand", "Futures Scalp",
-        "Nasdaq Short Put", "Short Put", "MTF Trend", "MTF Trend (Options)",
+        "Nasdaq Short Put", "Short Put", "MTF Trend", "MTF Trend (Options)", "Put Ratio 1:2:2",
     }
 
 
